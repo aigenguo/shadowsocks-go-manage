@@ -1,52 +1,51 @@
 package models
 
-import "database/sql"
-import _ "github.com/go-sql-driver/mysql"
+import (
+	"database/sql"
+	_ "github.com/go-sql-driver/mysql"
+	"time"
+)
 
-func initDb() *sql.DB {
-	db, err := sql.Open("mysql", "root:123456@tcp(localhost:3306)/ss5?charset=utf8mb4")
+type User struct {
+	ID int `json:"id"`
+	Email string `json:"email"`
+	Password string `json:"password"`
+	Remember string `json:"remember"`
+	Created time.Time `json:"created_at"`
+	Updated time.Time `json:"updated_at"`
+}
 
+type Member struct {
+	ID int `json:"id"`
+	Port int `json:"port"`
+	Password string `json:"password"`
+	Name string `json:"name"`
+	Created time.Time `json:"created_at"`
+	Updated time.Time `json:"updated_at"`
+}
+
+type MemberCollection struct {
+	Members []Member `json:"items"`
+}
+
+func GetMembers(db *sql.DB) MemberCollection {
+	ssql := "SELECT * FROM members"
+	rows, err := db.Query(ssql)
 	if err != nil {
 		panic(err)
 	}
+	defer rows.Close()
 
-	if db == nil {
-		panic("db nil")
+	result := MemberCollection{}
+	for rows.Next() {
+		member := Member{}
+		err = rows.Scan(&member.ID,&member.Port,&member.Password,&member.Name,&member.Created,&member.Updated)
+		if err != nil {
+			panic(err)
+		}
+		result.Members = append(result.Members,member)
 	}
-	return db
+	return result
 }
 
-func migrate(db *sql.DB) {
-	initsql := `
-		CREATE TABLE members (
-  			id int(10) unsigned NOT NULL AUTO_INCREMENT,
-  			port int(11) NOT NULL,
-  			password varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  			name varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  			created_at timestamp NULL DEFAULT NULL,
-  			updated_at timestamp NULL DEFAULT NULL,
-  			PRIMARY KEY (id),
-  		  	UNIQUE KEY members_port_unique (port)
-		) ENGINE=InnoDB AUTO_INCREMENT=35 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-
-		CREATE TABLE migrations (
-  			migration varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  			batch int(11) NOT NULL
-		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-
-		CREATE TABLE users (
-  			id int(10) unsigned NOT NULL AUTO_INCREMENT,
-  			email varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  			password varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  			remember_token varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  			created_at timestamp NULL DEFAULT NULL,
-  			updated_at timestamp NULL DEFAULT NULL,
-  			PRIMARY KEY (id),
-  			UNIQUE KEY users_email_unique (email)
-		) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-	`
-	_, err := db.Exec(initsql)
-	if err != nil {
-		panic(err)
-	}
-}
+func
